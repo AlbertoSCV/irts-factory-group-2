@@ -42,7 +42,7 @@ jason/                         Jason runtime and dependencies
 
 | Tool | Version |
 |------|---------|
-| Java | 17 or newer |
+| Java | 21 or newer |
 | Jason | 3.3 |
 | CArtAgO | 3.x |
 
