@@ -365,7 +365,7 @@ public class FactoryArtifact extends Artifact {
 
         // Assembly areas
         void drawAreas(Graphics2D g2) {
-            int[][] areas = { {350,150,350,350}, {705,150,250,350} };
+            int[][] areas = { {350,150,350,350}, {705,130,250,370} };
             for (int i = 0; i < AREAS; i++) {
                 int[] a = areas[i];
                 g2.setColor(m.lockArea[i] ? FactoryView.AREA_LOCK : FactoryView.AREA_FREE);
