@@ -4,7 +4,7 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 
 mkdir -p "$DIR/cartago-Factory/bin"
 javac -cp "$DIR/cartago-Factory/lib/*" \
-	"$DIR/cartago-Factory/src/env/factory/FactoryArtifact.java" \
+	"$DIR/cartago-Factory/src/env/factory/*.java" \
 	-d "$DIR/cartago-Factory/bin"
 
 cd "$DIR/cartago-Factory"
