@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
+
+mkdir -p "$DIR/cartago-Factory/bin"
+javac -cp "$DIR/cartago-Factory/lib/*" \
+	"$DIR/cartago-Factory/src/env/factory/FactoryArtifact.java" \
+	-d "$DIR/cartago-Factory/bin"
+
 cd "$DIR/cartago-Factory"
 
 # Using the machine's system Java instead of the local runtime
