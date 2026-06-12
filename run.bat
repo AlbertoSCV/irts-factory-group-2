@@ -2,9 +2,9 @@
 :: Get the absolute path of the directory where this script is located
 set "DIR=%~dp0"
 
-:: Compile the Java artifact before running the MAS
+:: Compile all Java artifacts before running the MAS
 if not exist "%DIR%cartago-Factory\bin" mkdir "%DIR%cartago-Factory\bin"
-javac -cp "%DIR%cartago-Factory\lib\*" "%DIR%cartago-Factory\src\env\factory\FactoryArtifact.java" -d "%DIR%cartago-Factory\bin"
+javac -cp "%DIR%cartago-Factory\lib\*" "%DIR%cartago-Factory\src\env\factory\*.java" -d "%DIR%cartago-Factory\bin"
 
 :: Change directory to cartago-Factory
 cd /d "%DIR%cartago-Factory"
