@@ -1,7 +1,7 @@
 // ============================================================
 //  holdingagent.asl — Jason 3.3 + CArtAgO
 // ============================================================
-{include("focus_factory.asl")}
+
 
 holdernumber(1, holdingagent1).
 holdernumber(2, holdingagent2).
@@ -25,8 +25,18 @@ holdernumber(6, holdingagent6).
    .broadcast(untell, holding(N)).
 
 +!start : true
-<- !focus_factory;
+<- !focus_holder;
    .my_name(Agent);
    ?holdernumber(N, Agent);
    +holdernumber(N);
    .print("Holding agent ", N, ": ready, waiting for part...").
+
++!focus_holder : not factory_art_id(_)
+<- .print("[", .my_name, "] searching for holder_env...");
+   lookupArtifact("holder_env", ArtId);
+   focus(ArtId);
+   +factory_art_id(ArtId);
+   .print("[", .my_name, "] focused on holder_env.").
+
+-!focus_holder : true
+<- .wait(500); !focus_holder.

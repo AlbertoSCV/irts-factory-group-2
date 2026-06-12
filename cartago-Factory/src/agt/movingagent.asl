@@ -1,7 +1,7 @@
 // ============================================================
 //  movingagent.asl — Jason 3.3 + CArtAgO
 // ============================================================
-{include("focus_factory.asl")}
+
 
 waitingposition(500, 70).
 framestockposition(-400, 300).
@@ -19,9 +19,22 @@ weldingCompleted   :- joints(N) & jointDone(N).
 !start.
 
 +!start : true
-<- !focus_factory;
+<- !focus_moving;
    .print("Moving robot: waiting for finished frame");
    !removeFrame.
+
++!focus_moving : not factory_art_id(_)
+<- .print("[", .my_name, "] Searching for moving_env...");
+   lookupArtifact("moving_env", ArtId);
+   focus(ArtId);
+   +factory_art_id(ArtId);
+   .print("[", .my_name, "] Focus on moving_env.").
+
+// if moving_env is not yet available, wait and retry
+-!focus_moving : true
+<- .print("[", .my_name, "] moving_env not ready, retrying...");
+   .wait(500);
+   !focus_moving.
 
 +!removeFrame : weldingCompleted & not (lockedArea(1) & lockedArea(2))
 <- .print("Moving robot: requesting areas 1 and 2.");
@@ -42,13 +55,13 @@ weldingCompleted   :- joints(N) & jointDone(N).
 +!pickFrame : true
 <- ?partPos(4, X, Y, _);
    !moveTo(X, Y);
-   pick_part("movingagent", 4);
+   pick_part(4);
    .broadcast(tell, mover(hold)).
 
 +!moveAway : holdersReleased
 <- ?framestockposition(X2, Y2);
    !moveTo(X2, Y2);
-   release_part("movingagent");
+   release_part;
    .broadcast(untell, mover(hold));
    !awaitUnlockArea;
    !parkArm.
@@ -57,7 +70,7 @@ weldingCompleted   :- joints(N) & jointDone(N).
 <- .wait(200); !moveAway.
 
 +!moveTo(X, Y) : not mover(X, Y)
-  <- move_towards("movingagent", X, Y, 0);
+  <- move_towards(X,Y,0);
      !moveTo(X, Y).
 
 +!moveTo(X, Y) : mover(X, Y).

@@ -3,7 +3,7 @@
 //  Jason 3.3 + CArtAgO 3.x
 //
 //  Compile the artifact first:
-//    javac -cp lib/cartago-2.5-SNAPSHOT.jar:lib/jaca-2.5-SNAPSHOT.jar \
+//    javac -cp jason-3.3.jar:cartago-3.x.jar \
 //          src/env/factory/FactoryArtifact.java \
 //          -d bin
 //

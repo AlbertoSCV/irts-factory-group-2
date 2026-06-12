@@ -7,13 +7,25 @@
 //  locally in this agent via .send to keep the agent-side
 //  area reservation protocol unchanged.
 // ============================================================
-{include("focus_factory.asl")}
 
 !start.
 
 +!start : true
-<- !focus_factory;
+<- !focus_assembly;
    .print("Assembly Area Agent: ready.").
+
+// Search and focus on ITS specific artifact (previously created by the robotic arm)
++!focus_assembly : not factory_art_id(_)
+<- .print("[", .my_name, "] Looking for assembly_env...");
+   lookupArtifact("assembly_env", ArtId);
+   focus(ArtId);
+   +factory_art_id(ArtId); // Save the belief for the lock plans
+   .print("[", .my_name, "] Focused on assembly_env OK.").
+
+// If assembly_env does not exist yet, wait and retry
+-!focus_assembly : true
+<- .wait(500);
+   !focus_assembly.
 
 // ── Full area lock ────────────────────────────────────────────
 
