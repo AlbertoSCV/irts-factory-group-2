@@ -4,7 +4,17 @@ set "DIR=%~dp0"
 
 :: Compile all Java artifacts before running the MAS
 if not exist "%DIR%cartago-Factory\bin" mkdir "%DIR%cartago-Factory\bin"
-javac -cp "%DIR%cartago-Factory\lib\*" "%DIR%cartago-Factory\src\env\factory\*.java" -d "%DIR%cartago-Factory\bin"
+javac -cp "%DIR%cartago-Factory\lib\*" ^
+	"%DIR%cartago-Factory\src\env\factory\AssemblyAreaArtifact.java" ^
+	"%DIR%cartago-Factory\src\env\factory\BinArtifact.java" ^
+	"%DIR%cartago-Factory\src\env\factory\FactoryArtifact.java" ^
+	"%DIR%cartago-Factory\src\env\factory\FactoryModel.java" ^
+	"%DIR%cartago-Factory\src\env\factory\FactoryView.java" ^
+	"%DIR%cartago-Factory\src\env\factory\HolderArtifact.java" ^
+	"%DIR%cartago-Factory\src\env\factory\MovingArtifact.java" ^
+	"%DIR%cartago-Factory\src\env\factory\RoboticArmArtifact.java" ^
+	"%DIR%cartago-Factory\src\env\factory\WelderArtifact.java" ^
+	-d "%DIR%cartago-Factory\bin"
 
 :: Change directory to cartago-Factory
 cd /d "%DIR%cartago-Factory"

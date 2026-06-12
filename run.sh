@@ -4,7 +4,15 @@ DIR="$(cd "$(dirname "$0")" && pwd)"
 
 mkdir -p "$DIR/cartago-Factory/bin"
 javac -cp "$DIR/cartago-Factory/lib/*" \
-	"$DIR/cartago-Factory/src/env/factory/*.java" \
+	"$DIR/cartago-Factory/src/env/factory/AssemblyAreaArtifact.java" \
+	"$DIR/cartago-Factory/src/env/factory/BinArtifact.java" \
+	"$DIR/cartago-Factory/src/env/factory/FactoryArtifact.java" \
+	"$DIR/cartago-Factory/src/env/factory/FactoryModel.java" \
+	"$DIR/cartago-Factory/src/env/factory/FactoryView.java" \
+	"$DIR/cartago-Factory/src/env/factory/HolderArtifact.java" \
+	"$DIR/cartago-Factory/src/env/factory/MovingArtifact.java" \
+	"$DIR/cartago-Factory/src/env/factory/RoboticArmArtifact.java" \
+	"$DIR/cartago-Factory/src/env/factory/WelderArtifact.java" \
 	-d "$DIR/cartago-Factory/bin"
 
 cd "$DIR/cartago-Factory"
