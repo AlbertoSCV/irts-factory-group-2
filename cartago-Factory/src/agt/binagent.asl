@@ -9,10 +9,10 @@ repair_time(15000).
 base_timer(25000).
 
 // Mappings
-human(binagent1, 1, "Bob").
-human(binagent2, 2, "Alice").
-human(binagent3, 3, "Tom").
-human(binagent4, 4, "Mary").
+human(binagent1, 1, "bob"). 
+human(binagent2, 2, "alice").
+human(binagent3, 3, "tom").
+human(binagent4, 4, "mary").
 robot(binagent5).
 robot(binagent6).
 
@@ -41,22 +41,14 @@ binfull(6) :- bin_6(true).
 <- !focus_bin;
    +on_shift;
    +produced(0);
-   .my_name(Me);
-   if (human(Me, _, Name)) { .print("Human agent ", Name, " ready."); }
-   else { .print("Robot agent ", Me, " online."); };
    !!local_timer;
    !work_loop.
 
 +!local_timer : shift_period(S) & off_period(O)
-<- .my_name(Me);
-   -+on_shift;
+<- -+on_shift;
    -+produced(0);
-   if (human(Me, _, Name)) { .print(">>> ", Name, " is starting the work shift (Quota: ", quota(Me, _), ")"); }
-   else { .print(">>> Robot ", Me, " entering peak-support mode."); };
    .wait(S);
    -on_shift;
-   if (human(Me, _, Name)) { .print("<<< ", Name, " is going OFF-SHIFT to rest."); }
-   else { .print("<<< Robot ", Me, " entering maintenance/solo mode."); };
    .wait(O);
    !!local_timer.
 
@@ -72,56 +64,45 @@ binfull(6) :- bin_6(true).
    .wait(1000); 
    !work_loop.
 
-// ── HUMAN LOGIC ──────────────────────────────────────────────
 +!check_and_refill : .my_name(Me) & human(Me, N, Name) & on_shift & not binfull(N)
 <- ?base_timer(T);
    ?produced(Count);
    ?quota(Me, Q);
-   
-   // Chatting logic
    if (math.random < 0.2) { 
        Chat = 400 + math.random(400);
-       .print(Name, " is distracted chatting for ", Chat, "ms...");
+       .print(Name, " chatting for ", Chat, " ms.");
        .wait(Chat); 
    };
-   
-   // Speed logic
-   if (Count < Q) { 
-       W = math.random * (T * 0.4); 
-       .print(Name, " is working FASTER to meet quota (", Count+1, "/", Q, ")");
-   } else { 
-       W = math.random * T; 
-       .print(Name, " is working at normal pace...");
-   };
-   
+   if (Count < Q) { W = math.random * (T * 0.4); .print(Name, " compensating."); } 
+   else { W = math.random * T; };
    .wait(W);
    if (not binfull(N)) { 
        refill_bin(N); 
        -+produced(Count + 1); 
-       .print(Name, " successfully refilled bin ", N, ". Total: ", Count+1); 
+       .print(Name, " refilled bin ", N); 
    }.
 
-// ── ROBOT LOGIC ──────────────────────────────────────────────
-+!check_and_refill : .my_name(binagent5) & not binfull(5) <- !do_refill(5).
-+!check_and_refill : .my_name(binagent6) & not binfull(6) <- !do_refill(6).
-
-+!check_and_refill : .my_name(binagent5) & not on_shift & not binfull(1) <- !do_refill(1).
-+!check_and_refill : .my_name(binagent5) & not on_shift & not binfull(2) <- !do_refill(2).
-+!check_and_refill : .my_name(binagent6) & not on_shift & not binfull(3) <- !do_refill(3).
-+!check_and_refill : .my_name(binagent6) & not on_shift & not binfull(4) <- !do_refill(4).
++!check_and_refill : .my_name(Me) & robot(Me)
+<- ?base_timer(T);
+   if (math.random < 0.08) { 
+       .print("Robot ", Me, " broken.");
+       .wait(repair_time); 
+   };
+   !select_bin_and_refill(T).
 
 +!check_and_refill.
 
-+!do_refill(N) : true
-<- .my_name(Me);
-   ?base_timer(T);
-   if (math.random < 0.08) { 
-       .print("!!! Robot ", Me, " malfunction! Fixing for ", repair_time, "ms...");
-       .wait(repair_time); 
-   };
-   .print("Robot ", Me, " is refilling bin ", N, "...");
-   .wait(T); 
++!select_bin_and_refill(T) : not binfull(5) <- !do_refill(5, T).
++!select_bin_and_refill(T) : not binfull(6) <- !do_refill(6, T).
++!select_bin_and_refill(T) : not on_shift & not binfull(1) <- !do_refill(1, T).
++!select_bin_and_refill(T) : not on_shift & not binfull(2) <- !do_refill(2, T).
++!select_bin_and_refill(T) : not on_shift & not binfull(3) <- !do_refill(3, T).
++!select_bin_and_refill(T) : not on_shift & not binfull(4) <- !do_refill(4, T).
++!select_bin_and_refill(T).
+
++!do_refill(N, T) : true
+<- .wait(T); 
    if (not binfull(N)) { 
        refill_bin(N); 
-       .print("Robot ", Me, " finished refilling bin ", N); 
+       .print("Robot ", .my_name, " refilled bin ", N); 
    }.
