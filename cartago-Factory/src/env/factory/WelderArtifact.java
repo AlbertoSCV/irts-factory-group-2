@@ -32,7 +32,9 @@ public class WelderArtifact extends Artifact {
     @OPERATION
     void weld() {
         String user = getOpUserName();
+        this.beginExternalSession();
         model.weld(user);
+        this.endExternalSession();
         if (user.equals("weldingagent2")) {
             updateObsProperty("welder2", model.welder2Position[0], model.welder2Position[1]);
         } else {
