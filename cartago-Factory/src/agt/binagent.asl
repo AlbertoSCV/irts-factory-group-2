@@ -4,9 +4,9 @@
 
 // Configuration Constants
 shift_period(80000).
-quota(3).
-repair_time(20000).
-base_timer(25000).
+quota(2).           // Lower quota to ensure humans can definitely finish
+repair_time(20000). 
+base_timer(15000).  // Faster base timer to prevent UI desync
 
 // Mappings
 human(binagent1, 1). // Bob
@@ -39,7 +39,7 @@ binfull(6) :- bin_6(true).
    +my_bin(N);
    +produced(0);
    .print("Agent ", Me, " started.");
-   !!shift_timer; // Separate thread for the 80s cycle
+   !!shift_timer; 
    !work_loop.
 
 +!shift_timer : shift_period(P)
@@ -60,13 +60,8 @@ binfull(6) :- bin_6(true).
 
 +!work_loop : true
 <- !check_refill;
-   .wait(1000); // Polling delay to not choke the UI
+   .wait(2000); // Polling delay reduced to keep UI in sync
    !work_loop.
-
-// Humans stop working if quota is met for the shift
-+!check_refill : .my_name(Me) & human(Me, _) & produced(C) & quota(Q) & C >= Q
-<- // Just wait for next shift
-   .wait(2000).
 
 +!check_refill : my_bin(N) & not binfull(N)
 <- !perform_refill.
@@ -78,27 +73,25 @@ binfull(6) :- bin_6(true).
 +!perform_refill : .my_name(Me) & human(Me, N)
 <- ?base_timer(T);
    ?produced(Count);
+   ?quota(Q);
    
-   // Potential distraction (400-800ms)
-   if (math.random < 0.3) {
-       ChatTime = 400 + (math.random * 400);
-       .print("Chatting...");
-       .wait(ChatTime);
-   };
-   
-   // Compensation logic: if we are low on production, go faster.
-   // Normal speed is math.random * 25s. Fast is math.random * 10s.
-   if (Count < 1) { 
-       ActualWait = math.random * (T * 0.4); 
-       .print("Behind! Working fast...");
+   // Humans only work if they haven't met their quota
+   if (Count < Q) {
+       // Distraction (400-800ms)
+       if (math.random < 0.2) {
+           .wait(400 + math.random(400));
+       };
+       
+       // Human speed (25s - 35s equivalent)
+       .wait(T + math.random(T));
+       
+       refill_bin(N);
+       -+produced(Count + 1);
+       .print("Refilled bin ", N, ". Produced: ", Count + 1);
    } else {
-       ActualWait = math.random * T;
-   };
-   
-   .wait(ActualWait);
-   refill_bin(N);
-   -+produced(Count + 1);
-   .print("Refilled bin ", N, ". Produced: ", Count + 1).
+       // Quota met, resting
+       .wait(5000);
+   }.
 
 // ── Robot Refill Logic ───────────────────────────────────────
 
@@ -110,7 +103,7 @@ binfull(6) :- bin_6(true).
        .wait(RT);
    };
    
-   .wait(T); // Robots are consistent
+   .wait(T); // Robots are consistent and match the "physical" animation speed
    ?my_bin(N);
    refill_bin(N);
    .print("Robot refilled bin ", N).
