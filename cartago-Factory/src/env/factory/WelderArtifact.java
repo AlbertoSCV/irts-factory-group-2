@@ -45,7 +45,9 @@ public class WelderArtifact extends Artifact {
     @OPERATION
     void move_towards(int x, int y, int angle) {
         String user = getOpUserName();
+        this.beginExternalSession();
         model.moveTowards(user, x, y, angle);
+        this.endExternalSession(true);
         if (user.equals("weldingagent2")) {
             updateObsProperty("welder2", model.welder2Position[0], model.welder2Position[1]);
         } else {
