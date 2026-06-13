@@ -8,7 +8,7 @@ waitingposition(1000, 470).
 +?welder(X, Y) : true
   <- ?welder(X, Y).
 
-// Which parts must be in place for each joint
+// Joint 1, 2, 4 (Area 1)
 jointPartsInPlace(1) :- holding(1) & holding(2) & holding(3).
 jointPartsInPlace(2) :- holding(2) & holding(4).
 jointPartsInPlace(4) :- holding(4) & holding(5).
@@ -20,7 +20,7 @@ holdersReleased    :- holders(N) & holdersReleased(N).
 
 +!main : true
 <- !focus_welder;
-   .print("Welding robot 1 (Area 1): waiting for new parts");
+   .print("Welding robot 1 (Area 1): online.");
    !weldParts.
 
 +!focus_welder : not factory_art_id(_)
@@ -28,21 +28,21 @@ holdersReleased    :- holders(N) & holdersReleased(N).
    focus(ArtId);
    +factory_art_id(ArtId).
 
--!focus_welder : true
-<- .wait(500); !focus_welder.
+-!focus_welder : true <- .wait(500); !focus_welder.
 
+// Reset cycle
 +!weldParts : joint(1) & joint(2) & joint(4) & holdersReleased
 <- !forgetJoints; !weldParts.
 
-// Welder 1 only works on joints 1, 2, 4 in Area 1
+// Priority: Lock Area 1 for Joints 1, 2, 4
 +!weldParts : (Joint = 1 | Joint = 2 | Joint = 4) & jointPartsInPlace(Joint) & not joint(Joint) & not lockedArea(1)
 <- .print("Welding robot 1: requesting area 1.");
    .my_name(Agent);
    .send(assemblyareaagent, achieve, lockAreaFor(Agent, 1));
-   .wait(200);
+   .wait(500);
    !weldParts.
 
-
+// Weld logic
 +!weldParts : (Joint = 1 | Joint = 2 | Joint = 4) & jointPartsInPlace(Joint) & not joint(Joint) & lockedArea(1)
 <- .print("Welding robot 1: welding joint ", Joint);
    .drop_intention(parkArm);
@@ -55,7 +55,7 @@ holdersReleased    :- holders(N) & holdersReleased(N).
    !weldParts.
 
 +!weldParts : true
-<- .wait(200); 
+<- .wait(500); 
    !weldParts.
 
 +!forgetJoints : (Joint = 1 | Joint = 2 | Joint = 4) & joint(Joint)
@@ -75,8 +75,8 @@ holdersReleased    :- holders(N) & holdersReleased(N).
 +!parkArm : lockedArea(Area)
 <- ?waitingposition(X, Y);
    !moveTo(X, Y);
-   .print("Welding arm 1: releasing lock from area ", Area);
    .my_name(Agent);
+   .print("Welder 1 releasing area ", Area);
    .send(assemblyareaagent, achieve, unlockAreaFor(Agent, Area));
    .wait(200);
    !parkArm.
