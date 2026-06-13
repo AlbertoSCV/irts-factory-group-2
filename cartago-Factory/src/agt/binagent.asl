@@ -1,27 +1,22 @@
 // ============================================================
 //  binagent.asl — Jason 3.3 + CArtAgO
+//
+//  Changes from Jason 2.x:
+//   1. !focus_bin (lookupArtifact + focus with retry) to prevent
+//      ArtifactNotAvailableException race conditions.
+//   2. binfull(N) derived from obs. property bin_N(true).
+//   3. math.random(X) instead of .random(X).
+//   4. refill_bin(N) is a CArtAgO operation (no extra annotation).
 // ============================================================
+timer(25000).
 
-// Configuration Constants
-shift_period(80000).
-off_period(160000).
-repair_time(15000).
-human_base_timer(40000). // Humans naturally slower
-robot_timer(30000).      // Robots faster but constant
-
-// Human specialization mapping (agent, bin_type, name)
-human(binagent1, 1, "bob"). 
+// Mappings for Human and Robot roles
+human(binagent1, 1, "bob").
 human(binagent2, 2, "alice").
 human(binagent3, 3, "tom").
 human(binagent4, 4, "mary").
 robot(binagent5).
 robot(binagent6).
-
-// Different and fixed number of bins for each human (worst case)
-quota(binagent1, 2).
-quota(binagent2, 1).
-quota(binagent3, 2).
-quota(binagent4, 1).
 
 binnumber(1, binagent1).
 binnumber(2, binagent2).
@@ -30,6 +25,7 @@ binnumber(4, binagent4).
 binnumber(5, binagent5).
 binnumber(6, binagent6).
 
+// binfull(N) derived from CArtAgO observable properties bin_1..bin_6
 binfull(1) :- bin_1(true).
 binfull(2) :- bin_2(true).
 binfull(3) :- bin_3(true).
@@ -39,83 +35,118 @@ binfull(6) :- bin_6(true).
 
 !start.
 
-+!start : true
-<- !focus_bin;
-   +on_shift;
-   +produced(0);
-   !!local_timer;
-   !work_loop.
-
-+!local_timer : shift_period(S) & off_period(O)
+// ── Shift Management ──────────────────────────────────────────
++!shift_timer : true
 <- -+on_shift;
    -+produced(0);
-   .wait(S);
+   .wait(80000); // 80s period
    -on_shift;
-   .wait(O);
-   !!local_timer.
+   .wait(160000); // Off period
+   !!shift_timer.
 
+// ── Startup & Focus ───────────────────────────────────────────
+
+// Main startup: first request to focus on the environment
++!start : true
+<- !focus_bin;
+   .my_name(Me);
+   ?binnumber(N, Me);
+   +binnumber(N);
+   +produced(0);
+   +on_shift;
+   !!shift_timer; // Start the local cycle
+   .print("Bin agent ", N, " started.");
+   !check_empty.
+
+// Search and focus on ITS specific artifact
 +!focus_bin : not factory_art_id(_)
-<- lookupArtifact("bin_env", ArtId);
+<- .print("[", .my_name, "] Looking for bin_env...");
+   lookupArtifact("bin_env", ArtId);
    focus(ArtId);
-   +factory_art_id(ArtId).
+   +factory_art_id(ArtId); // Save the belief
+   .print("[", .my_name, "] Focused on bin_env OK.").
 
--!focus_bin : true <- .wait(500); !focus_bin.
+// Fallback plan: If bin_env does not exist yet, wait and retry
+-!focus_bin : true
+<- .print("[", .my_name, "] bin_env not ready, retrying...");
+   .wait(500);
+   !focus_bin.
 
-+!work_loop : true
-<- !check_and_refill;
-   .wait(1000); 
-   !work_loop.
+// Worst-case fixed quotas for humans
+quota(binagent1, 2).
+quota(binagent2, 1).
+quota(binagent3, 2).
+quota(binagent4, 1).
 
-// ── HUMAN LOGIC ──────────────────────────────────────────────
-+!check_and_refill : .my_name(Me) & human(Me, N, Name) & on_shift & not binfull(N)
-<- ?human_base_timer(T);
-   ?produced(Count);
+// Repair time for robots
+repair_time(15000).
+
+// ── Operations ────────────────────────────────────────────────
+
+// Polling: humans only check if on shift
++!check_empty : .my_name(Me) & human(Me, N, Name) & on_shift & not binfull(N)
+<- !refill; 
+   .wait(1500); 
+   !check_empty.
+
+// Robots check any bin as needed
++!check_empty : .my_name(Me) & robot(Me)
+<- !robot_check;
+   .wait(1500);
+   !check_empty.
+
++!check_empty : true
+<- .wait(1500); 
+   !check_empty.
+
+// Robot versatility: search for empty bins
++!robot_check : not binfull(5) <- !refill_target(5).
++!robot_check : not binfull(6) <- !refill_target(6).
++!robot_check : not on_shift & not binfull(1) <- !refill_target(1).
++!robot_check : not on_shift & not binfull(2) <- !refill_target(2).
++!robot_check : not on_shift & not binfull(3) <- !refill_target(3).
++!robot_check : not on_shift & not binfull(4) <- !refill_target(4).
++!robot_check.
+
++!refill_target(N) : true
+<- +target(N);
+   !refill;
+   -target(N).
+
+// Specialized refill for Humans
++!refill : .my_name(Me) & human(Me, N, Name) & timer(T)
+<- ?produced(Count);
    ?quota(Me, Q);
-   
-   if (math.random < 0.2) { 
-       Chat = 400 + math.random(400);
-       .print(Name, " chatting for ", Chat, " ms.");
-       .wait(Chat); 
+   // Bored distraction
+   if (math.random < 0.2) {
+       .wait(400 + math.random(400));
+       .print(Name, " is chatting...");
    };
-   
-   if (Count < Q) { 
-       W = math.random * (T * 0.4); // Compensation speed
-       .print(Name, " compensating (faster production).");
-   } else { 
-       W = (math.random * T) + 10000; // Normal slow pace
+   // Speed compensation
+   if (Count < Q) {
+       ActualWait = math.random * (T * 0.4);
+       .print(Name, " working faster to meet quota.");
+   } else {
+       ActualWait = math.random * T;
    };
-   
-   .wait(W);
-   if (not binfull(N)) { 
-       refill_bin(N); 
-       -+produced(Count + 1); 
-       .print(Name, " refilled bin ", N, ". Count: ", Count+1); 
+   .wait(ActualWait);
+   if (not binfull(N)) {
+       refill_bin(N);
+       -+produced(Count + 1);
+       .print(Name, " refilled bin ", N);
    }.
 
-// ── ROBOT LOGIC ──────────────────────────────────────────────
-+!check_and_refill : .my_name(Me) & robot(Me)
-<- ?robot_timer(T);
-   if (math.random < 0.08) { 
-       .print("Robot ", Me, " broken. Repairing.");
-       .wait(repair_time); 
+// Specialized refill for Robots
++!refill : .my_name(Me) & robot(Me) & timer(T)
+<- // Breakage chance 8%
+   if (math.random < 0.08) {
+       .print("Robot ", Me, " broken.");
+       .wait(repair_time);
    };
-   !robot_strategy(T).
-
-+!check_and_refill.
-
-+!robot_strategy(T) : .my_name(binagent5) & not binfull(5) <- !do_refill(5, T).
-+!robot_strategy(T) : .my_name(binagent6) & not binfull(6) <- !do_refill(6, T).
-+!robot_strategy(T) : not binfull(5) <- !do_refill(5, T).
-+!robot_strategy(T) : not binfull(6) <- !do_refill(6, T).
-+!robot_strategy(T) : not on_shift & not binfull(1) <- !do_refill(1, T).
-+!robot_strategy(T) : not on_shift & not binfull(2) <- !do_refill(2, T).
-+!robot_strategy(T) : not on_shift & not binfull(3) <- !do_refill(3, T).
-+!robot_strategy(T) : not on_shift & not binfull(4) <- !do_refill(4, T).
-+!robot_strategy(T).
-
-+!do_refill(N, T) : true
-<- .wait(T); 
-   if (not binfull(N)) { 
-       refill_bin(N); 
-       .print("Robot ", .my_name, " refilled bin ", N); 
+   .wait(T); // Always makes the same number of parts (fixed time)
+   if (target(N) & not binfull(N)) {
+       refill_bin(N);
+       .print("Robot ", Me, " refilled bin ", N);
    }.
+
++!refill.
