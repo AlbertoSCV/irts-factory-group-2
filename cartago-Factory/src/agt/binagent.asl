@@ -99,13 +99,24 @@ repair_time(15000).
 <- .wait(1500); 
    !check_empty.
 
-// Robot versatility: search for empty bins
-+!robot_check : not binfull(5) <- !refill_target(5).
-+!robot_check : not binfull(6) <- !refill_target(6).
-+!robot_check : not on_shift & not binfull(1) <- !refill_target(1).
-+!robot_check : not on_shift & not binfull(2) <- !refill_target(2).
-+!robot_check : not on_shift & not binfull(3) <- !refill_target(3).
-+!robot_check : not on_shift & not binfull(4) <- !refill_target(4).
+// Robot versatility: search for empty bins with static priority to avoid collision
++!robot_check : .my_name(binagent5)
+<- if (not binfull(5)) { !refill_target(5) }
+   else { if (not binfull(1)) { !refill_target(1) }
+   else { if (not binfull(2)) { !refill_target(2) }
+   else { if (not on_shift) { // Help with 3,4 only if humans are off and 5,1,2 are full
+        if (not binfull(3)) { !refill_target(3) }
+        else { if (not binfull(4)) { !refill_target(4) } }
+   } } } }.
+
++!robot_check : .my_name(binagent6)
+<- if (not binfull(6)) { !refill_target(6) }
+   else { if (not binfull(3)) { !refill_target(3) }
+   else { if (not binfull(4)) { !refill_target(4) }
+   else { if (not on_shift) { // Help with 1,2 only if humans are off and 6,3,4 are full
+        if (not binfull(1)) { !refill_target(1) }
+        else { if (not binfull(2)) { !refill_target(2) } }
+   } } } }.
 +!robot_check.
 
 +!refill_target(N) : true
