@@ -73,7 +73,7 @@ binfull(6) :- bin_6(true).
    !focus_bin.
 // Base timers for rebalancing speed
 human_timer(40000).  // Humans are slower (40s base)
-robot_timer(25000).   // Robots are faster but constant (25s base)
+robot_timer(20000).   // Robots are faster but constant (20s base)
 repair_time(15000).
 
 // Worst-case fixed quotas for humans
