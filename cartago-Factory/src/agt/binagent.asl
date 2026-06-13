@@ -4,9 +4,9 @@
 
 // Configuration Constants
 shift_period(80000).
-quota(6).           // Increased quota
-repair_time(20000).  // Longer repair
-base_timer(35000).  // Slower base speed
+quota(3).
+repair_time(20000).
+base_timer(25000).
 
 // Mappings
 human(binagent1, 1). // Bob
@@ -23,7 +23,6 @@ binnumber(4, binagent4).
 binnumber(5, binagent5).
 binnumber(6, binagent6).
 
-// binfull(N) derived from CArtAgO observable properties bin_1..bin_6
 binfull(1) :- bin_1(true).
 binfull(2) :- bin_2(true).
 binfull(3) :- bin_3(true).
@@ -33,22 +32,21 @@ binfull(6) :- bin_6(true).
 
 !start.
 
-// ── Startup & Focus ───────────────────────────────────────────
-
 +!start : true
 <- !focus_bin;
    .my_name(Me);
    ?binnumber(N, Me);
    +my_bin(N);
    +produced(0);
-   .print("Agent ", Me, " (Bin ", N, ") started.");
-   !start_shift;
+   .print("Agent ", Me, " started.");
+   !!shift_timer; // Separate thread for the 80s cycle
    !work_loop.
 
-+!start_shift : shift_period(P)
-<- -+produced(0);
-   .at("now + 80 s", { +!start_shift });
-   .print("New shift started").
++!shift_timer : shift_period(P)
+<- .wait(P);
+   .print("--- NEW SHIFT STARTING ---");
+   -+produced(0);
+   !!shift_timer.
 
 +!focus_bin : not factory_art_id(_)
 <- lookupArtifact("bin_env", ArtId);
@@ -62,11 +60,17 @@ binfull(6) :- bin_6(true).
 
 +!work_loop : true
 <- !check_refill;
-   .wait(500);
+   .wait(1000); // Polling delay to not choke the UI
    !work_loop.
+
+// Humans stop working if quota is met for the shift
++!check_refill : .my_name(Me) & human(Me, _) & produced(C) & quota(Q) & C >= Q
+<- // Just wait for next shift
+   .wait(2000).
 
 +!check_refill : my_bin(N) & not binfull(N)
 <- !perform_refill.
+
 +!check_refill.
 
 // ── Human Refill Logic ───────────────────────────────────────
@@ -74,41 +78,39 @@ binfull(6) :- bin_6(true).
 +!perform_refill : .my_name(Me) & human(Me, N)
 <- ?base_timer(T);
    ?produced(Count);
-   ?quota(Q);
    
-   // Check if needing to speed up (compensation)
-   // Simple heuristic: if we are behind quota, go faster
-   if (Count < Q) {
-       ActualWait = (math.random * T) * 0.5; // Faster
-       .print("Working faster to meet quota...");
-   } else {
-       ActualWait = math.random * T;
+   // Potential distraction (400-800ms)
+   if (math.random < 0.3) {
+       ChatTime = 400 + (math.random * 400);
+       .print("Chatting...");
+       .wait(ChatTime);
    };
    
-   // Potential distraction (20% chance)
-   if (math.random < 0.2) {
-       ChatTime = 400 + (math.random * 400);
-       .print("Chatting with colleagues for ", ChatTime, "ms...");
-       .wait(ChatTime);
+   // Compensation logic: if we are low on production, go faster.
+   // Normal speed is math.random * 25s. Fast is math.random * 10s.
+   if (Count < 1) { 
+       ActualWait = math.random * (T * 0.4); 
+       .print("Behind! Working fast...");
+   } else {
+       ActualWait = math.random * T;
    };
    
    .wait(ActualWait);
    refill_bin(N);
    -+produced(Count + 1);
-   .print("Human ", Me, " refilled bin ", N, ". Total this shift: ", Count + 1).
+   .print("Refilled bin ", N, ". Produced: ", Count + 1).
 
 // ── Robot Refill Logic ───────────────────────────────────────
 
 +!perform_refill : .my_name(Me) & robot(Me)
 <- ?base_timer(T);
-   // Breakage probability 8%
    if (math.random < 0.08) {
        ?repair_time(RT);
-       .print("Robot ", Me, " BROKEN! Repairing for ", RT, "ms...");
+       .print("BROKEN! Repairing...");
        .wait(RT);
    };
    
-   .wait(T); // Robots always take the same time
+   .wait(T); // Robots are consistent
    ?my_bin(N);
    refill_bin(N);
-   .print("Robot ", Me, " refilled bin ", N).
+   .print("Robot refilled bin ", N).
