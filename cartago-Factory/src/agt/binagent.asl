@@ -4,7 +4,7 @@
 
 // Configuration Constants
 shift_period(80000).
-off_period(40000).  // Reduced for better simulation flow
+off_period(160000).
 repair_time(15000).
 base_timer(25000).
 
@@ -18,7 +18,7 @@ robot(binagent6).
 
 quota(binagent1, 2).
 quota(binagent2, 1).
-quota(binagent3, 3).
+quota(binagent3, 2).
 quota(binagent4, 1).
 
 binnumber(1, binagent1).
@@ -28,7 +28,6 @@ binnumber(4, binagent4).
 binnumber(5, binagent5).
 binnumber(6, binagent6).
 
-// Perception
 binfull(1) :- bin_1(true).
 binfull(2) :- bin_2(true).
 binfull(3) :- bin_3(true).
@@ -42,17 +41,16 @@ binfull(6) :- bin_6(true).
 <- !focus_bin;
    +on_shift;
    +produced(0);
-   !!local_timer; // Each agent runs its own timer to avoid cross-agent belief pollution
+   !!local_timer;
    !work_loop.
 
 +!local_timer : shift_period(S) & off_period(O)
-<- .my_name(Me);
-   -+on_shift;
+<- -+on_shift;
    -+produced(0);
-   .print("Shift started");
+   .print("Work shift started");
    .wait(S);
    -on_shift;
-   .print("Shift ended (Resting)");
+   .print("Rest period started");
    .wait(O);
    !!local_timer.
 
@@ -66,47 +64,37 @@ binfull(6) :- bin_6(true).
 
 +!work_loop : true
 <- !check_and_refill;
-   .wait(3000); // UI breathing room
+   .wait(2000); 
    !work_loop.
 
-// ── HUMAN LOGIC ──
-// Human only works IF on_shift AND their specific bin is empty
+// ── HUMAN LOGIC ──────────────────────────────────────────────
 +!check_and_refill : .my_name(Me) & human(Me, N) & on_shift & not binfull(N)
 <- ?base_timer(T);
    ?produced(Count);
    ?quota(Me, Q);
-   
    if (math.random < 0.2) { .wait(400 + math.random(400)); };
-   
-   if (Count < Q) { Wait = math.random * (T * 0.4); } 
-   else { Wait = math.random * T; };
-   
-   .wait(Wait);
-   if (not binfull(N)) {
-       refill_bin(N);
-       -+produced(Count + 1);
-       .print("Refilled bin ", N);
-   }.
+   if (Count < Q) { W = math.random * (T * 0.4); } else { W = math.random * T; };
+   .wait(W);
+   if (not binfull(N)) { refill_bin(N); -+produced(Count + 1); .print("Human refilled bin ", N); }.
 
-// ── ROBOT LOGIC ──
-// Robot works regardless of shift, can refill any bin 1-6
+// ── ROBOT LOGIC ──────────────────────────────────────────────
+// Robots always manage Bins 5 & 6. 
+// They only manage Bins 1-4 if the humans are NOT on_shift (off-peak/rest).
 +!check_and_refill : .my_name(Me) & robot(Me)
 <- ?base_timer(T);
-   if (math.random < 0.08) { .wait(repair_time); .print("Broken/Repaired"); };
+   if (math.random < 0.08) { .print("ROBOT BROKEN"); .wait(repair_time); };
    
-   // Robot picks first available empty bin
-   if (not binfull(1)) { !do_robot_refill(1, T) }
-   else { if (not binfull(2)) { !do_robot_refill(2, T) }
-   else { if (not binfull(3)) { !do_robot_refill(3, T) }
-   else { if (not binfull(4)) { !do_robot_refill(4, T) }
-   else { if (not binfull(5)) { !do_robot_refill(5, T) }
-   else { if (not binfull(6)) { !do_robot_refill(6, T) } } } } } }.
+   if (not binfull(5)) { !do_refill(5, T) }
+   else { if (not binfull(6)) { !do_refill(6, T) }
+   else { if (not on_shift) { // Only help with 1-4 if humans are resting
+        if (not binfull(1)) { !do_refill(1, T) }
+        else { if (not binfull(2)) { !do_refill(2, T) }
+        else { if (not binfull(3)) { !do_refill(3, T) }
+        else { if (not binfull(4)) { !do_refill(4, T) } } } }
+   } } }.
 
 +!check_and_refill.
 
-+!do_robot_refill(N, T) : true
-<- .wait(T);
-   if (not binfull(N)) {
-       refill_bin(N);
-       .print("Robot refilled bin ", N);
-   }.
++!do_refill(N, T) : true
+<- .wait(T); 
+   if (not binfull(N)) { refill_bin(N); .print("Robot refilled bin ", N); }.
