@@ -4,9 +4,8 @@
 
 // Configuration Constants
 shift_period(80000).
-quota(2).           // Lower quota to ensure humans can definitely finish
-repair_time(20000). 
-base_timer(15000).  // Faster base timer to prevent UI desync
+repair_time(15000).
+base_timer(25000).
 
 // Mappings
 human(binagent1, 1). // Bob
@@ -16,6 +15,12 @@ human(binagent4, 4). // Mary
 robot(binagent5).
 robot(binagent6).
 
+// Worst Case Quota
+quota(binagent1, 2).
+quota(binagent2, 1).
+quota(binagent3, 3).
+quota(binagent4, 1).
+
 binnumber(1, binagent1).
 binnumber(2, binagent2).
 binnumber(3, binagent3).
@@ -23,6 +28,7 @@ binnumber(4, binagent4).
 binnumber(5, binagent5).
 binnumber(6, binagent6).
 
+// Correct perception: only refill if the bin is truly perceived as empty
 binfull(1) :- bin_1(true).
 binfull(2) :- bin_2(true).
 binfull(3) :- bin_3(true).
@@ -39,12 +45,12 @@ binfull(6) :- bin_6(true).
    +my_bin(N);
    +produced(0);
    .print("Agent ", Me, " started.");
-   !!shift_timer; 
+   !!shift_timer;
    !work_loop.
 
 +!shift_timer : shift_period(P)
 <- .wait(P);
-   .print("--- NEW SHIFT STARTING ---");
+   .print("--- NEW SHIFT ---");
    -+produced(0);
    !!shift_timer.
 
@@ -56,54 +62,56 @@ binfull(6) :- bin_6(true).
 -!focus_bin : true
 <- .wait(500); !focus_bin.
 
-// ── Main Work Loop ───────────────────────────────────────────
-
 +!work_loop : true
 <- !check_refill;
-   .wait(2000); // Polling delay reduced to keep UI in sync
+   .wait(3000); // Polling delay increased to ensure artifact state syncs
    !work_loop.
 
 +!check_refill : my_bin(N) & not binfull(N)
 <- !perform_refill.
-
 +!check_refill.
 
 // ── Human Refill Logic ───────────────────────────────────────
 
-+!perform_refill : .my_name(Me) & human(Me, N)
++!perform_refill : .my_name(Me) & human(Me, N) & my_bin(N) & not binfull(N)
 <- ?base_timer(T);
    ?produced(Count);
-   ?quota(Q);
+   ?quota(Me, Q);
    
-   // Humans only work if they haven't met their quota
+   if (math.random < 0.2) {
+       .wait(400 + math.random(400));
+       .print("Chatting...");
+   };
+   
    if (Count < Q) {
-       // Distraction (400-800ms)
-       if (math.random < 0.2) {
-           .wait(400 + math.random(400));
-       };
-       
-       // Human speed (25s - 35s equivalent)
-       .wait(T + math.random(T));
-       
+       ActualWait = math.random * (T * 0.4); 
+       .print("Compensating...");
+   } else {
+       ActualWait = math.random * T;
+   };
+   
+   .wait(ActualWait);
+   
+   // Double check state before calling artifact operation to prevent ghost refills
+   if (not binfull(N)) {
        refill_bin(N);
        -+produced(Count + 1);
        .print("Refilled bin ", N, ". Produced: ", Count + 1);
-   } else {
-       // Quota met, resting
-       .wait(5000);
    }.
 
 // ── Robot Refill Logic ───────────────────────────────────────
 
-+!perform_refill : .my_name(Me) & robot(Me)
++!perform_refill : .my_name(Me) & robot(Me) & my_bin(N) & not binfull(N)
 <- ?base_timer(T);
    if (math.random < 0.08) {
        ?repair_time(RT);
-       .print("BROKEN! Repairing...");
+       .print("Robot BROKEN. Repairing...");
        .wait(RT);
    };
    
-   .wait(T); // Robots are consistent and match the "physical" animation speed
-   ?my_bin(N);
-   refill_bin(N);
-   .print("Robot refilled bin ", N).
+   .wait(T); 
+   
+   if (not binfull(N)) {
+       refill_bin(N);
+       .print("Robot refilled bin ", N);
+   }.
