@@ -8,7 +8,7 @@
 //   3. math.random(X) instead of .random(X).
 //   4. refill_bin(N) is a CArtAgO operation (no extra annotation).
 // ============================================================
-timer(25000).
+timer(30000).
 
 // Mappings for Human and Robot roles
 human(binagent1, 1, "bob").
@@ -73,7 +73,7 @@ binfull(6) :- bin_6(true).
    !focus_bin.
 // Base timers for rebalancing speed
 human_timer(40000).  // Humans are slower (40s base)
-robot_timer(30000).   // Robots are faster but constant (30s base)
+robot_timer(25000).   // Robots are faster but constant (25s base)
 repair_time(15000).
 
 // Worst-case fixed quotas for humans
@@ -100,24 +100,26 @@ quota(binagent4, 1).
 <- .wait(2500); 
    !check_empty.
 
-// Robot versatility: search for empty bins with static priority to avoid collision
+// Robot versatility: search for empty bins with logic for mutual backup and off-shift support
 +!robot_check : .my_name(binagent5)
 <- if (not binfull(5)) { !refill_target(5) }
-   else { if (not binfull(1)) { !refill_target(1) }
-   else { if (not binfull(2)) { !refill_target(2) }
-   else { if (not on_shift) { // Help with 3,4 only if humans are off and 5,1,2 are full
-        if (not binfull(3)) { !refill_target(3) }
-        else { if (not binfull(4)) { !refill_target(4) } }
-   } } } }.
+   else { if (not binfull(6)) { !refill_target(6) } // Backup robot 6
+   else { if (not on_shift) { // Only help with 1-4 if humans are off
+        if (not binfull(1)) { !refill_target(1) }
+        else { if (not binfull(2)) { !refill_target(2) }
+        else { if (not binfull(3)) { !refill_target(3) }
+        else { if (not binfull(4)) { !refill_target(4) } } } }
+   } } }.
 
 +!robot_check : .my_name(binagent6)
 <- if (not binfull(6)) { !refill_target(6) }
-   else { if (not binfull(3)) { !refill_target(3) }
-   else { if (not binfull(4)) { !refill_target(4) }
-   else { if (not on_shift) { // Help with 1,2 only if humans are off and 6,3,4 are full
-        if (not binfull(1)) { !refill_target(1) }
-        else { if (not binfull(2)) { !refill_target(2) } }
-   } } } }.
+   else { if (not binfull(5)) { !refill_target(5) } // Backup robot 5
+   else { if (not on_shift) { // Only help with 1-4 if humans are off
+        if (not binfull(3)) { !refill_target(3) }
+        else { if (not binfull(4)) { !refill_target(4) }
+        else { if (not binfull(1)) { !refill_target(1) }
+        else { if (not binfull(2)) { !refill_target(2) } } } }
+   } } }.
 
 +!robot_check.
 
@@ -137,7 +139,7 @@ quota(binagent4, 1).
    };
    // Speed compensation
    if (Count < Q) {
-       ActualWait = math.random * (T * 0.4);
+       ActualWait = math.random * (T * 0.7);
        .print(Name, " working faster to meet quota.");
    } else {
        ActualWait = (math.random * T) + 10000;
