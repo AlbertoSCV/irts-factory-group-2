@@ -82,15 +82,31 @@ public class FactoryModel {
         Arrays.fill(joint, false);
     }
 
-    public synchronized void weld(String ag) {
+    public void weld(String ag) {
         int[] pos = ag.equals("weldingagent2") ? welder2Position : welderPosition;
         for (int i = 0; i < JOINTS; i++) {
             if (pos[0] == JOINT_POS[i][0] && pos[1] == JOINT_POS[i][1]) {
-                if (ag.equals("weldingagent2")) welding2 = true; else welding = true;
-                try { Thread.sleep(5000); }
-                catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-                joint[i] = true;
-                if (ag.equals("weldingagent2")) welding2 = false; else welding = false;
+                if (ag.equals("weldingagent2")) {
+                    welding2 = true;
+                } else {
+                    welding = true;
+                }
+                
+                try { 
+                    Thread.sleep(5000); 
+                } catch (InterruptedException e) { 
+                    Thread.currentThread().interrupt(); 
+                }
+                
+                synchronized(this) {
+                    joint[i] = true;
+                }
+
+                if (ag.equals("weldingagent2")) {
+                    welding2 = false;
+                } else {
+                    welding = false;
+                }
             }
         }
     }
