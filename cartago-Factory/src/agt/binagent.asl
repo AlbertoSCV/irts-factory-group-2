@@ -71,6 +71,10 @@ binfull(6) :- bin_6(true).
 <- .print("[", .my_name, "] bin_env not ready, retrying...");
    .wait(500);
    !focus_bin.
+// Base timers for rebalancing speed
+human_timer(40000).  // Humans are slower (40s base)
+robot_timer(30000).   // Robots are faster but constant (30s base)
+repair_time(15000).
 
 // Worst-case fixed quotas for humans
 quota(binagent1, 2).
@@ -78,25 +82,22 @@ quota(binagent2, 1).
 quota(binagent3, 2).
 quota(binagent4, 1).
 
-// Repair time for robots
-repair_time(15000).
-
 // ── Operations ────────────────────────────────────────────────
 
 // Polling: humans only check if on shift
 +!check_empty : .my_name(Me) & human(Me, N, Name) & on_shift & not binfull(N)
 <- !refill; 
-   .wait(1500); 
+   .wait(2500); // Polling delay to slow down environment checks
    !check_empty.
 
 // Robots check any bin as needed
 +!check_empty : .my_name(Me) & robot(Me)
 <- !robot_check;
-   .wait(1500);
+   .wait(2500);
    !check_empty.
 
 +!check_empty : true
-<- .wait(1500); 
+<- .wait(2500); 
    !check_empty.
 
 // Robot versatility: search for empty bins with static priority to avoid collision
@@ -117,6 +118,7 @@ repair_time(15000).
         if (not binfull(1)) { !refill_target(1) }
         else { if (not binfull(2)) { !refill_target(2) } }
    } } } }.
+
 +!robot_check.
 
 +!refill_target(N) : true
@@ -125,7 +127,7 @@ repair_time(15000).
    -target(N).
 
 // Specialized refill for Humans
-+!refill : .my_name(Me) & human(Me, N, Name) & timer(T)
++!refill : .my_name(Me) & human(Me, N, Name) & human_timer(T)
 <- ?produced(Count);
    ?quota(Me, Q);
    // Bored distraction
@@ -138,7 +140,7 @@ repair_time(15000).
        ActualWait = math.random * (T * 0.4);
        .print(Name, " working faster to meet quota.");
    } else {
-       ActualWait = math.random * T;
+       ActualWait = (math.random * T) + 10000;
    };
    .wait(ActualWait);
    if (not binfull(N)) {
@@ -148,7 +150,7 @@ repair_time(15000).
    }.
 
 // Specialized refill for Robots
-+!refill : .my_name(Me) & robot(Me) & timer(T)
++!refill : .my_name(Me) & robot(Me) & robot_timer(T)
 <- // Breakage chance 8%
    if (math.random < 0.08) {
        .print("Robot ", Me, " broken.");
