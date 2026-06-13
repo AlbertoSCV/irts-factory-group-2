@@ -2,8 +2,8 @@
 //  binagent.asl — Jason 3.3 + CArtAgO
 // ============================================================
 
-human_timer(35000).  // Humans are slower (40s base)
-robot_timer(20000).   // Robots are faster but constant (20s base)
+human_timer(40000).  // Humans are slower (40s base)
+robot_timer(25000).   // Robots are faster but constant (20s base)
 repair_time(15000).
 
 // Mappings for Human and Robot roles
