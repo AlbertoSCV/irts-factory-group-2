@@ -2,8 +2,8 @@
 //  binagent.asl — Jason 3.3 + CArtAgO
 // ============================================================
 
-human_timer(40000).  // Humans are slower (40s base)
-robot_timer(30000).   // Robots are faster but constant (30s base)
+human_timer(35000).  // Humans are slower (40s base)
+robot_timer(20000).   // Robots are faster but constant (20s base)
 repair_time(15000).
 
 // Mappings for Human and Robot roles
@@ -125,7 +125,7 @@ binfull(6) :- bin_6(true).
        .print(Name, " is chatting...");
    };
    if (Count < Q) {
-       ActualWait = math.random * (T * 0.4);
+       ActualWait = math.random * (T * 0.7);
        .print(Name, " working faster to meet quota.");
    } else {
        ActualWait = (math.random * T) + 10000;
