@@ -88,26 +88,22 @@ binfull(6) :- bin_6(true).
 <- .wait(3000); 
    !check_empty.
 
-// Robot versatility logic: Zonal preference + mutual backup + off-shift support
+// Robot versatility logic: Prioritize ANY empty bin over full ones, maintaining zonal preference
 +!robot_check : .my_name(binagent5)
 <- if (not binfull(5)) { !refill_target(5) }
-   else { if (not binfull(6)) { !refill_target(6) }
-   else { if (not on_shift) { 
-        if (not binfull(1)) { !refill_target(1) }
-        else { if (not binfull(2)) { !refill_target(2) }
-        else { if (not binfull(3)) { !refill_target(3) }
-        else { if (not binfull(4)) { !refill_target(4) } } } }
-   } } }.
+   else { if (not binfull(1) & not on_shift) { !refill_target(1) }
+   else { if (not binfull(2) & not on_shift) { !refill_target(2) }
+   else { if (not binfull(6)) { !refill_target(6) } // Help robot 6 if 5,1,2 are OK
+   else { if (not binfull(3) & not on_shift) { !refill_target(3) }
+   else { if (not binfull(4) & not on_shift) { !refill_target(4) } } } } } }.
 
 +!robot_check : .my_name(binagent6)
 <- if (not binfull(6)) { !refill_target(6) }
-   else { if (not binfull(5)) { !refill_target(5) }
-   else { if (not on_shift) { 
-        if (not binfull(3)) { !refill_target(3) }
-        else { if (not binfull(4)) { !refill_target(4) }
-        else { if (not binfull(1)) { !refill_target(1) }
-        else { if (not binfull(2)) { !refill_target(2) } } } }
-   } } }.
+   else { if (not binfull(3) & not on_shift) { !refill_target(3) }
+   else { if (not binfull(4) & not on_shift) { !refill_target(4) }
+   else { if (not binfull(5)) { !refill_target(5) } // Help robot 5 if 6,3,4 are OK
+   else { if (not binfull(1) & not on_shift) { !refill_target(1) }
+   else { if (not binfull(2) & not on_shift) { !refill_target(2) } } } } } }.
 
 +!robot_check.
 
@@ -125,19 +121,22 @@ binfull(6) :- bin_6(true).
        .print(Name, " is chatting...");
    };
    if (Count < Q) {
-       ActualWait = math.random * (T * 0.7);
+       ActualWait = math.random * (T * 0.8);
        .print(Name, " working faster to meet quota.");
    } else {
        ActualWait = (math.random * T) + 10000;
    };
    .wait(ActualWait);
-   // FINAL PERCEPTION CHECK before action
-   if (not binfull(N)) {
+   // FINAL PERCEPTION CHECK + ATOMIC LOCKING
+   if (not binfull(N) & not currently_refilling(N)) {
+       +currently_refilling(N); // Set local lock 
        refill_bin(N);
        -+produced(Count + 1);
        .print(Name, " refilled bin ", N);
+       .wait(500); // Hold lock briefly for CArtAgO sync
+       -currently_refilling(N);
    } else {
-       .print(Name, " cancelled: bin already full.");
+       .print(Name, " cancelled: bin already full or being refilled.");
    }.
 
 // Specialized refill for Robots with FINAL SYNC CHECK
@@ -149,11 +148,14 @@ binfull(6) :- bin_6(true).
    .wait(T); 
    if (target(N)) {
       ?target(BinID);
-      if (not binfull(BinID)) {
+      if (not binfull(BinID) & not currently_refilling(BinID)) {
+          +currently_refilling(BinID); // Set local lock
           refill_bin(BinID);
           .print("Robot ", Me, " refilled bin ", BinID);
+          .wait(500); // Hold lock briefly for CArtAgO sync
+          -currently_refilling(BinID);
       } else {
-          .print("Robot ", Me, " cancelled: bin already full.");
+          .print("Robot ", Me, " cancelled: bin already full or being refilled.");
       }
    }.
 
