@@ -3,8 +3,8 @@
 // ============================================================
 
 // Configuration Constants
-shift_period(80000).  // 8 hours
-off_period(160000).   // 16 hours off
+shift_period(80000).
+off_period(40000).  // Reduced for better simulation flow
 repair_time(15000).
 base_timer(25000).
 
@@ -16,10 +16,9 @@ human(binagent4, 4). // Mary
 robot(binagent5).
 robot(binagent6).
 
-// Worst Case Quota per shift
 quota(binagent1, 2).
 quota(binagent2, 1).
-quota(binagent3, 2).
+quota(binagent3, 3).
 quota(binagent4, 1).
 
 binnumber(1, binagent1).
@@ -29,6 +28,7 @@ binnumber(4, binagent4).
 binnumber(5, binagent5).
 binnumber(6, binagent6).
 
+// Perception
 binfull(1) :- bin_1(true).
 binfull(2) :- bin_2(true).
 binfull(3) :- bin_3(true).
@@ -40,22 +40,21 @@ binfull(6) :- bin_6(true).
 
 +!start : true
 <- !focus_bin;
-   .my_name(Me);
    +on_shift;
    +produced(0);
-   !!global_timer;
-   !check_empty.
+   !!local_timer; // Each agent runs its own timer to avoid cross-agent belief pollution
+   !work_loop.
 
-// Global cycle: 80s work, 160s rest for humans
-+!global_timer : shift_period(S) & off_period(O)
-<- .print("--- HUMANS STARTING SHIFT ---");
++!local_timer : shift_period(S) & off_period(O)
+<- .my_name(Me);
    -+on_shift;
    -+produced(0);
+   .print("Shift started");
    .wait(S);
-   .print("--- HUMANS ENDING SHIFT (Resting) ---");
    -on_shift;
+   .print("Shift ended (Resting)");
    .wait(O);
-   !!global_timer.
+   !!local_timer.
 
 +!focus_bin : not factory_art_id(_)
 <- lookupArtifact("bin_env", ArtId);
@@ -65,54 +64,48 @@ binfull(6) :- bin_6(true).
 -!focus_bin : true
 <- .wait(500); !focus_bin.
 
-// Polling loop
-+!check_empty : true
-<- !try_refill_any;
-   .wait(3000); 
-   !check_empty.
++!work_loop : true
+<- !check_and_refill;
+   .wait(3000); // UI breathing room
+   !work_loop.
 
-// Robots can refill ANY empty bin (1-6)
-+!try_refill_any : robot(Me)
-<- if (not binfull(1)) { !perform_refill(1) }
-   else { if (not binfull(2)) { !perform_refill(2) }
-   else { if (not binfull(3)) { !perform_refill(3) }
-   else { if (not binfull(4)) { !perform_refill(4) }
-   else { if (not binfull(5)) { !perform_refill(5) }
-   else { if (not binfull(6)) { !perform_refill(6) } } } } } }.
-
-// Humans specialized: only refill their specific bin, only if on shift
-+!try_refill_any : human(Me, N) & on_shift & not binfull(N)
-<- !perform_refill(N).
-
-+!try_refill_any.
-
-// ── Human Refill Logic ───────────────────────────────────────
-+!perform_refill(N) : human(Me, N)
+// ── HUMAN LOGIC ──
+// Human only works IF on_shift AND their specific bin is empty
++!check_and_refill : .my_name(Me) & human(Me, N) & on_shift & not binfull(N)
 <- ?base_timer(T);
    ?produced(Count);
    ?quota(Me, Q);
    
-   if (math.random < 0.25) { .wait(400 + math.random(400)); .print("Chatting..."); };
+   if (math.random < 0.2) { .wait(400 + math.random(400)); };
    
-   if (Count < Q) { ActualWait = math.random * (T * 0.4); .print("Compensating..."); }
-   else { ActualWait = math.random * T; };
+   if (Count < Q) { Wait = math.random * (T * 0.4); } 
+   else { Wait = math.random * T; };
    
-   .wait(ActualWait);
+   .wait(Wait);
    if (not binfull(N)) {
        refill_bin(N);
        -+produced(Count + 1);
-       .print("Human refilled bin ", N);
+       .print("Refilled bin ", N);
    }.
 
-// ── Robot Refill Logic ───────────────────────────────────────
-+!perform_refill(N) : robot(Me)
+// ── ROBOT LOGIC ──
+// Robot works regardless of shift, can refill any bin 1-6
++!check_and_refill : .my_name(Me) & robot(Me)
 <- ?base_timer(T);
-   if (math.random < 0.08) {
-       .print("Robot BROKEN. Repairing...");
-       .wait(repair_time);
-   };
+   if (math.random < 0.08) { .wait(repair_time); .print("Broken/Repaired"); };
    
-   .wait(T);
+   // Robot picks first available empty bin
+   if (not binfull(1)) { !do_robot_refill(1, T) }
+   else { if (not binfull(2)) { !do_robot_refill(2, T) }
+   else { if (not binfull(3)) { !do_robot_refill(3, T) }
+   else { if (not binfull(4)) { !do_robot_refill(4, T) }
+   else { if (not binfull(5)) { !do_robot_refill(5, T) }
+   else { if (not binfull(6)) { !do_robot_refill(6, T) } } } } } }.
+
++!check_and_refill.
+
++!do_robot_refill(N, T) : true
+<- .wait(T);
    if (not binfull(N)) {
        refill_bin(N);
        .print("Robot refilled bin ", N);
