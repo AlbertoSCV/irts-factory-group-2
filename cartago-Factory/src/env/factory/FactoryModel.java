@@ -26,7 +26,7 @@ public class FactoryModel {
     public static final int[][] HOLDER_POS   = { {910,210},{757,183},{785,270},{500,309},{422,309},{449,448} };
     public static final int[]   ARM_BASE     = { 600,  613 };
     public static final int[]   WELDER_BASE  = { 1000,  70 };
-    public static final int[]   WELDER2_BASE = { 200, 70 };
+    public static final int[]   WELDER2_BASE = { 1000, 613 };
     public static final int[]   MOVER_BASE   = {  300,  70 };
     public static final int[][] BIN_POS      = { {270,538},{270,568},{270,598},{270,628},{270,658},{270,688} };
     public static final int[][] JOINT_POS    = { {914,194},{501,197},{534,460},{501,215},{358,459} };
@@ -45,8 +45,8 @@ public class FactoryModel {
     public boolean[] lockArea = new boolean[AREAS];
 
     public int[] gripperPosition = { 270, 613 };
-    public int[] welderPosition  = { 1000, 470 };
-    public int[] welder2Position = { 200, 470 };
+    public int[] welderPosition  = { 1000, 270 };
+    public int[] welder2Position = { 1000, 400 };
     public int[] moverPosition   = { 500, 70 };
 
     // ── Constructor ───────────────────────────────────────────

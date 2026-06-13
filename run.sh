@@ -6,7 +6,6 @@ mkdir -p "$DIR/cartago-Factory/bin"
 javac -cp "$DIR/cartago-Factory/lib/*" \
 	"$DIR/cartago-Factory/src/env/factory/AssemblyAreaArtifact.java" \
 	"$DIR/cartago-Factory/src/env/factory/BinArtifact.java" \
-	"$DIR/cartago-Factory/src/env/factory/FactoryArtifact.java" \
 	"$DIR/cartago-Factory/src/env/factory/FactoryModel.java" \
 	"$DIR/cartago-Factory/src/env/factory/FactoryView.java" \
 	"$DIR/cartago-Factory/src/env/factory/HolderArtifact.java" \

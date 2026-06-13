@@ -94,7 +94,7 @@ class Canvas extends JComponent {
     }
 
     void drawAreas(Graphics2D g2) {
-        int[][] areas = { {300, 150, 700, 150}, {300, 300, 700, 200} };
+        int[][] areas = { {300, 150, 650, 145}, {300, 300, 650, 205} };
         for (int i = 0; i < FactoryModel.AREAS; i++) {
             int[] a = areas[i];
             g2.setColor(m.lockArea[i] ? FactoryView.AREA_LOCK : FactoryView.AREA_FREE);

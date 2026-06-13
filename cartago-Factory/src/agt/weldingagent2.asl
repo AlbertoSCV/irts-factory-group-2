@@ -2,7 +2,7 @@
 //  weldingagent2.asl — Jason 3.3 + CArtAgO (Welder 2)
 // ============================================================
 
-waitingposition(200, 470).
+waitingposition(1000, 400).
 
 // Soft-goal retry for welder2 percept
 +?welder2(X, Y) : true
