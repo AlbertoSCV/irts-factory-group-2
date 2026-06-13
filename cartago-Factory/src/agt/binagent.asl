@@ -8,7 +8,7 @@ off_period(160000).
 repair_time(15000).
 base_timer(25000).
 
-// Mappings
+// Human specialization mapping (agent, bin_type, name)
 human(binagent1, 1, "bob"). 
 human(binagent2, 2, "alice").
 human(binagent3, 3, "tom").
@@ -16,6 +16,7 @@ human(binagent4, 4, "mary").
 robot(binagent5).
 robot(binagent6).
 
+// Different and fixed number of bins for each human (worst case)
 quota(binagent1, 2).
 quota(binagent2, 1).
 quota(binagent3, 2).
@@ -64,41 +65,55 @@ binfull(6) :- bin_6(true).
    .wait(1000); 
    !work_loop.
 
+// ── HUMAN LOGIC ──────────────────────────────────────────────
 +!check_and_refill : .my_name(Me) & human(Me, N, Name) & on_shift & not binfull(N)
 <- ?base_timer(T);
    ?produced(Count);
    ?quota(Me, Q);
+   
    if (math.random < 0.2) { 
        Chat = 400 + math.random(400);
        .print(Name, " chatting for ", Chat, " ms.");
        .wait(Chat); 
    };
-   if (Count < Q) { W = math.random * (T * 0.4); .print(Name, " compensating."); } 
-   else { W = math.random * T; };
+   
+   if (Count < Q) { 
+       W = math.random * (T * 0.4); 
+       .print(Name, " compensating (faster production).");
+   } else { 
+       W = math.random * T; 
+   };
+   
    .wait(W);
    if (not binfull(N)) { 
        refill_bin(N); 
        -+produced(Count + 1); 
-       .print(Name, " refilled bin ", N); 
+       .print(Name, " refilled bin ", N, ". Count: ", Count+1); 
    }.
 
+// ── ROBOT LOGIC ──────────────────────────────────────────────
 +!check_and_refill : .my_name(Me) & robot(Me)
 <- ?base_timer(T);
    if (math.random < 0.08) { 
-       .print("Robot ", Me, " broken.");
+       .print("Robot ", Me, " broken. Repairing.");
        .wait(repair_time); 
    };
-   !select_bin_and_refill(T).
+   !robot_strategy(T).
 
 +!check_and_refill.
 
-+!select_bin_and_refill(T) : not binfull(5) <- !do_refill(5, T).
-+!select_bin_and_refill(T) : not binfull(6) <- !do_refill(6, T).
-+!select_bin_and_refill(T) : not on_shift & not binfull(1) <- !do_refill(1, T).
-+!select_bin_and_refill(T) : not on_shift & not binfull(2) <- !do_refill(2, T).
-+!select_bin_and_refill(T) : not on_shift & not binfull(3) <- !do_refill(3, T).
-+!select_bin_and_refill(T) : not on_shift & not binfull(4) <- !do_refill(4, T).
-+!select_bin_and_refill(T).
+// Robots divide primary bins (5 and 6) then scan for others as needed
++!robot_strategy(T) : .my_name(binagent5) & not binfull(5) <- !do_refill(5, T).
++!robot_strategy(T) : .my_name(binagent6) & not binfull(6) <- !do_refill(6, T).
++!robot_strategy(T) : not binfull(5) <- !do_refill(5, T).
++!robot_strategy(T) : not binfull(6) <- !do_refill(6, T).
+
+// Support humans when they are off shift
++!robot_strategy(T) : not on_shift & not binfull(1) <- !do_refill(1, T).
++!robot_strategy(T) : not on_shift & not binfull(2) <- !do_refill(2, T).
++!robot_strategy(T) : not on_shift & not binfull(3) <- !do_refill(3, T).
++!robot_strategy(T) : not on_shift & not binfull(4) <- !do_refill(4, T).
++!robot_strategy(T).
 
 +!do_refill(N, T) : true
 <- .wait(T); 
