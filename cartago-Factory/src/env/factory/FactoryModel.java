@@ -111,20 +111,28 @@ public class FactoryModel {
         }
     }
 
-    public synchronized void moveTowards(String ag, int tx, int ty, int ta) {
+    public void moveTowards(String ag, int tx, int ty, int ta) {
         if (ag.equals("roboticarmagent")) {
-            gripperPosition[0] = step(gripperPosition[0], tx);
-            gripperPosition[1] = step(gripperPosition[1], ty);
-            gripperAngle       = stepAngle(gripperAngle, ta);
+            synchronized(this) {
+                gripperPosition[0] = step(gripperPosition[0], tx);
+                gripperPosition[1] = step(gripperPosition[1], ty);
+                gripperAngle       = stepAngle(gripperAngle, ta);
+            }
         } else if (ag.equals("weldingagent")) {
-            welderPosition[0] = step(welderPosition[0], tx);
-            welderPosition[1] = step(welderPosition[1], ty);
+            synchronized(this) {
+                welderPosition[0] = step(welderPosition[0], tx);
+                welderPosition[1] = step(welderPosition[1], ty);
+            }
         } else if (ag.equals("weldingagent2")) {
-            welder2Position[0] = step(welder2Position[0], tx);
-            welder2Position[1] = step(welder2Position[1], ty);
+            synchronized(this) {
+                welder2Position[0] = step(welder2Position[0], tx);
+                welder2Position[1] = step(welder2Position[1], ty);
+            }
         } else if (ag.equals("movingagent")) {
-            moverPosition[0] = step(moverPosition[0], tx);
-            moverPosition[1] = step(moverPosition[1], ty);
+            synchronized(this) {
+                moverPosition[0] = step(moverPosition[0], tx);
+                moverPosition[1] = step(moverPosition[1], ty);
+            }
         }
         try { Thread.sleep(10); }
         catch (InterruptedException e) { Thread.currentThread().interrupt(); }
