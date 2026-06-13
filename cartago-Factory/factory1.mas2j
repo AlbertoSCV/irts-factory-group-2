@@ -16,15 +16,9 @@
 // ============================================================
 MAS factory1 {
 
-    //infrastructure: Centralised
-
-    // CArtAgO is activated by this environment declaration.
-    // "main" is the name of the default workspace.
-    environment: jaca.CartagoEnvironment//cartago.CartagoEnvironment("main")
+    environment: jaca.CartagoEnvironment
 
     agents:
-        // roboticarmagent creates the shared factory artifact
-        // so it must start first (or retry via !focus_factory).
         roboticarmagent agentArchClass jaca.CAgentArch;
         weldingagent agentArchClass jaca.CAgentArch;
         weldingagent2 agentArchClass jaca.CAgentArch;
@@ -33,7 +27,5 @@ MAS factory1 {
         holdingagent #6 agentArchClass jaca.CAgentArch;
         binagent     #6 agentArchClass jaca.CAgentArch;
 
-    // Source directories for agent files and Java artifact classes
     aslSourcePath: "src/agt";
-    //classpath:     "bin";
 }

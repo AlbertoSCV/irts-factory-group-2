@@ -31,7 +31,8 @@ waitingposition(270, 613, 90).
 
    makeArtifact("bin_env", "factory.BinArtifact", [], BinArtId);
    makeArtifact("robotic_arm_env", "factory.RoboticArmArtifact", [], ArmArtId);
-   makeArtifact("welder_env", "factory.WelderArtifact", [], WelderArtId);
+   makeArtifact("welder_env1", "factory.WelderArtifact", [], WelderArtId1);
+   makeArtifact("welder_env2", "factory.WelderArtifact", [], WelderArtId2);
    makeArtifact("moving_env", "factory.MovingArtifact", [], MoverArtId);
    makeArtifact("holder_env", "factory.HolderArtifact", [], HolderArtId);
 

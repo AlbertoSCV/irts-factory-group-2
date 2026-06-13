@@ -23,7 +23,7 @@ holdersReleased    :- holders(N) & holdersReleased(N).
    !weldParts.
 
 +!focus_welder : not factory_art_id(_)
-<- lookupArtifact("welder_env", ArtId);
+<- createArtifact("welder_env2", "factory.WelderArtifact", [], ArtId);
    focus(ArtId);
    +factory_art_id(ArtId).
 
