@@ -42,6 +42,7 @@ holdersReleased    :- holders(N) & holdersReleased(N).
    .wait(200);
    !weldParts.
 
+
 +!weldParts : (Joint = 1 | Joint = 2 | Joint = 4) & jointPartsInPlace(Joint) & not joint(Joint) & lockedArea(1)
 <- .print("Welding robot 1: welding joint ", Joint);
    .drop_intention(parkArm);
