@@ -4,9 +4,9 @@
 
 // Configuration Constants
 shift_period(80000).
-quota(4).
-repair_time(15000).
-base_timer(25000).
+quota(6).           // Increased quota
+repair_time(20000).  // Longer repair
+base_timer(35000).  // Slower base speed
 
 // Mappings
 human(binagent1, 1). // Bob
