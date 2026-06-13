@@ -87,7 +87,8 @@ class Canvas extends JComponent {
         drawHolders(g2);
         drawJoints(g2, 0, 0);
         drawArm(g2);
-        drawWelder(g2);
+        drawWelder(g2, m.welderPosition, m.welding, FactoryModel.WELDER_BASE, "WELD 1");
+        drawWelder(g2, m.welder2Position, m.welding2, FactoryModel.WELDER2_BASE, "WELD 2");
         drawMover(g2);
         drawLabels(g2);
     }
@@ -170,9 +171,9 @@ class Canvas extends JComponent {
         }
     }
 
-    void drawWelder(Graphics2D g2) {
-        int bx=FactoryModel.WELDER_BASE[0], by=FactoryModel.WELDER_BASE[1];
-        int ex=m.welderPosition[0], ey=m.welderPosition[1];
+    void drawWelder(Graphics2D g2, int[] pos, boolean isWelding, int[] base, String label) {
+        int bx=base[0], by=base[1];
+        int ex=pos[0], ey=pos[1];
         g2.setColor(FactoryView.COL_WELD.darker());
         g2.setStroke(new BasicStroke(12, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g2.drawLine(bx, by, ex, ey);
@@ -183,12 +184,15 @@ class Canvas extends JComponent {
         g2.setStroke(new BasicStroke(10, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g2.drawLine(bx-30, by-30, bx+30, by+30);
         g2.drawLine(bx-30, by+30, bx+30, by-30);
-        if (m.welding && rng.nextBoolean()) {
+        if (isWelding && rng.nextBoolean()) {
             g2.setColor(FactoryView.GLOW);
             g2.fillOval(ex-20, ey-20, 40, 40);
         }
-        g2.setColor(m.welding ? new Color(0xFF,0x50,0x10) : FactoryView.COL_WELD);
+        g2.setColor(isWelding ? new Color(0xFF,0x50,0x10) : FactoryView.COL_WELD);
         g2.fillOval(ex-10, ey-10, 20, 20);
+        
+        g2.setFont(new Font("Monospaced", Font.BOLD, 10));
+        label(g2, label, bx-25, by+45, FactoryView.COL_WELD);
     }
 
     void drawMover(Graphics2D g2) {
@@ -217,7 +221,6 @@ class Canvas extends JComponent {
     void drawLabels(Graphics2D g2) {
         g2.setFont(new Font("Monospaced", Font.BOLD, 11));
         label(g2, "ROBOTIC ARM", FactoryModel.ARM_BASE[0]+20, FactoryModel.ARM_BASE[1]-8, FactoryView.COL_ARM);
-        label(g2, "WELDER", FactoryModel.WELDER_BASE[0]-90, FactoryModel.WELDER_BASE[1]-8, FactoryView.COL_WELD);
         label(g2, "MOVER", FactoryModel.MOVER_BASE[0]-10, FactoryModel.MOVER_BASE[1]+40, FactoryView.COL_MOVE);
     }
 

@@ -26,6 +26,7 @@ public class FactoryModel {
     public static final int[][] HOLDER_POS   = { {910,210},{757,183},{785,270},{500,309},{422,309},{449,448} };
     public static final int[]   ARM_BASE     = { 600,  613 };
     public static final int[]   WELDER_BASE  = { 1000,  70 };
+    public static final int[]   WELDER2_BASE = { 200, 70 };
     public static final int[]   MOVER_BASE   = {  300,  70 };
     public static final int[][] BIN_POS      = { {270,538},{270,568},{270,598},{270,628},{270,658},{270,688} };
     public static final int[][] JOINT_POS    = { {914,194},{501,197},{534,460},{501,215},{358,459} };
@@ -37,6 +38,7 @@ public class FactoryModel {
     public int       gripperPart  = -1;
     public int       gripperAngle = 90;
     public boolean   welding    = false;
+    public boolean   welding2   = false;
     public boolean   moving     = false;
     public boolean[] holding  = new boolean[HOLDERS];
     public boolean[] joint    = new boolean[JOINTS];
@@ -44,6 +46,7 @@ public class FactoryModel {
 
     public int[] gripperPosition = { 270, 613 };
     public int[] welderPosition  = { 1000, 470 };
+    public int[] welder2Position = { 200, 470 };
     public int[] moverPosition   = { 500, 70 };
 
     // ── Constructor ───────────────────────────────────────────
@@ -79,15 +82,15 @@ public class FactoryModel {
         Arrays.fill(joint, false);
     }
 
-    public synchronized void weld() {
+    public synchronized void weld(String ag) {
+        int[] pos = ag.equals("weldingagent2") ? welder2Position : welderPosition;
         for (int i = 0; i < JOINTS; i++) {
-            if (welderPosition[0] == JOINT_POS[i][0]
-                    && welderPosition[1] == JOINT_POS[i][1]) {
-                welding = true;
+            if (pos[0] == JOINT_POS[i][0] && pos[1] == JOINT_POS[i][1]) {
+                if (ag.equals("weldingagent2")) welding2 = true; else welding = true;
                 try { Thread.sleep(5000); }
                 catch (InterruptedException e) { Thread.currentThread().interrupt(); }
                 joint[i] = true;
-                welding  = false;
+                if (ag.equals("weldingagent2")) welding2 = false; else welding = false;
             }
         }
     }
@@ -100,6 +103,9 @@ public class FactoryModel {
         } else if (ag.equals("weldingagent")) {
             welderPosition[0] = step(welderPosition[0], tx);
             welderPosition[1] = step(welderPosition[1], ty);
+        } else if (ag.equals("weldingagent2")) {
+            welder2Position[0] = step(welder2Position[0], tx);
+            welder2Position[1] = step(welder2Position[1], ty);
         } else if (ag.equals("movingagent")) {
             moverPosition[0] = step(moverPosition[0], tx);
             moverPosition[1] = step(moverPosition[1], ty);

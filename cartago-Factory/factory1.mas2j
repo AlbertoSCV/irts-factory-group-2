@@ -27,6 +27,7 @@ MAS factory1 {
         // so it must start first (or retry via !focus_factory).
         roboticarmagent agentArchClass jaca.CAgentArch;
         weldingagent agentArchClass jaca.CAgentArch;
+        weldingagent2 agentArchClass jaca.CAgentArch;
         movingagent agentArchClass jaca.CAgentArch;
         assemblyareaagent agentArchClass jaca.CAgentArch;
         holdingagent #6 agentArchClass jaca.CAgentArch;
